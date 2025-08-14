@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
+using TMPro;
 
 public class MainManager : MonoBehaviour
 {
@@ -10,22 +10,32 @@ public class MainManager : MonoBehaviour
     public int LineCount = 6;
     public Rigidbody Ball;
 
-    public Text ScoreText;
+    public TextMeshProUGUI ScoreText;
+    public TextMeshProUGUI BestScoreText;
     public GameObject GameOverText;
-    
+
     private bool m_Started = false;
     private int m_Points;
-    
+
     private bool m_GameOver = false;
 
-    
+
     // Start is called before the first frame update
     void Start()
     {
+        if (ScoreManager.Instance != null)
+        {
+            // O texto de "SCORE" será o nome do jogador atual + a pontuação
+            ScoreText.text = $"{ScoreManager.Instance.currentPlayerName}: {m_Points}";
+
+            // O texto de "BEST SCORE" será o nome do melhor jogador + a melhor pontuação
+            BestScoreText.text = $"Best Score: {ScoreManager.Instance.bestScorePlayerName}: {ScoreManager.Instance.bestScore}";
+        }
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
-        
-        int[] pointCountArray = new [] {1,1,2,2,5,5};
+
+        int[] pointCountArray = new[] { 1, 1, 2, 2, 5, 5 };
         for (int i = 0; i < LineCount; ++i)
         {
             for (int x = 0; x < perLine; ++x)
@@ -59,18 +69,33 @@ public class MainManager : MonoBehaviour
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                SceneManager.LoadScene("StartMenu");
+            }
         }
     }
 
     void AddPoint(int point)
     {
         m_Points += point;
-        ScoreText.text = $"Score : {m_Points}";
+        ScoreText.text = $"{ScoreManager.Instance.currentPlayerName}: {m_Points}";
+
+        // Adicionamos esta lógica aqui para verificar o recorde a cada ponto
+        if (ScoreManager.Instance.UpdateAndCheckForNewBestScore(m_Points))
+        {
+            // Se for um novo recorde, atualiza o texto do Best Score imediatamente
+            BestScoreText.text = $"Best Score: {ScoreManager.Instance.bestScorePlayerName}: {ScoreManager.Instance.bestScore}";
+        }
     }
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        // Não precisamos mais salvar aqui, pois a atualização já ocorre a cada ponto
+        // Mas podemos adicionar uma chamada para salvar o arquivo quando o jogo acaba
+        ScoreManager.Instance.SaveScore();
     }
 }
